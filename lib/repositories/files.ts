@@ -1,0 +1,164 @@
+import { seedFiles } from "@/lib/mock/seed-data";
+import { runWithDataFallback } from "@/lib/repositories/runtime";
+import { createId, slugify } from "@/lib/repositories/utils";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { LibraryFile, UploadFileInput } from "@/types/domain";
+
+type FileRow = {
+  id: string;
+  slug: string;
+  folder_id: string;
+  title: string;
+  author: string;
+  kind: string;
+  published_at: string | null;
+  added_at: string;
+  tags: string[] | null;
+  summary_status: string;
+  processing_status?: string | null;
+  summary: string;
+  key_takeaways: string[] | null;
+  excerpts: string[] | null;
+  analyst_interpretation: string;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  original_file_name: string | null;
+  file_research_links?: Array<{ research_item_id: string }>;
+};
+
+function mapFile(row: FileRow): LibraryFile {
+  return {
+    id: row.id,
+    slug: row.slug,
+    folderId: row.folder_id,
+    title: row.title,
+    author: row.author,
+    kind: row.kind as LibraryFile["kind"],
+    publishedAt: row.published_at ?? row.added_at,
+    addedAt: row.added_at,
+    tags: row.tags ?? [],
+    linkedResearchIds: row.file_research_links?.map((link) => link.research_item_id) ?? [],
+    summaryStatus: row.summary_status as LibraryFile["summaryStatus"],
+    processingStatus: (row.processing_status ?? "uploaded") as LibraryFile["processingStatus"],
+    summary: row.summary,
+    keyTakeaways: row.key_takeaways ?? [],
+    excerpts: row.excerpts ?? [],
+    analystInterpretation: row.analyst_interpretation,
+    storageBucket: row.storage_bucket ?? undefined,
+    storagePath: row.storage_path ?? undefined,
+    originalFileName: row.original_file_name ?? undefined,
+    mimeType: row.mime_type ?? undefined,
+    fileSizeBytes: row.file_size_bytes ?? undefined
+  };
+}
+
+export async function listFiles() {
+  return runWithDataFallback(async () => {
+    const supabase = createSupabaseAdminClient();
+    if (!supabase) throw new Error("Supabase admin client unavailable");
+
+    const { data, error } = await supabase
+      .from("files")
+      .select("*, file_research_links(research_item_id)")
+      .order("added_at", { ascending: false });
+
+    if (error) throw error;
+    return (data as FileRow[] | null)?.map(mapFile) ?? [];
+  }, async () => seedFiles);
+}
+
+export async function listFilesByFolder(folderId: string) {
+  const files = await listFiles();
+  return files.filter((file) => file.folderId === folderId);
+}
+
+export async function getFileBySlug(slug: string) {
+  const files = await listFiles();
+  return files.find((file) => file.slug === slug);
+}
+
+export async function createFileRecord(input: UploadFileInput & Partial<LibraryFile>) {
+  return runWithDataFallback(async () => {
+    const supabase = createSupabaseAdminClient();
+    if (!supabase) throw new Error("Supabase admin client unavailable");
+
+    const payload = {
+      folder_id: input.folderId,
+      slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+      title: input.title,
+      author: input.author ?? "Unknown",
+      kind: input.kind,
+      published_at: input.publishedAt ?? null,
+      tags: input.tags ?? [],
+      summary_status: input.summaryStatus ?? "queued",
+      processing_status: input.processingStatus ?? "uploaded",
+      summary: input.summary ?? "",
+      key_takeaways: input.keyTakeaways ?? [],
+      excerpts: input.excerpts ?? [],
+      analyst_interpretation: input.analystInterpretation ?? "",
+      storage_bucket: input.storageBucket ?? null,
+      storage_path: input.storagePath ?? null,
+      mime_type: input.mimeType ?? null,
+      file_size_bytes: input.fileSizeBytes ?? null,
+      original_file_name: input.originalFileName ?? input.fileName
+    };
+
+    const { data, error } = await supabase.from("files").insert(payload).select("*").single();
+    if (error) throw error;
+    return mapFile(data as FileRow);
+  }, async () => ({
+    id: createId("file"),
+    slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+    folderId: input.folderId,
+    title: input.title,
+    author: input.author ?? "Unknown",
+    kind: input.kind,
+    publishedAt: input.publishedAt ?? new Date().toISOString(),
+    addedAt: new Date().toISOString(),
+    tags: input.tags ?? [],
+    linkedResearchIds: [],
+    summaryStatus: input.summaryStatus ?? "queued",
+    processingStatus: input.processingStatus ?? "uploaded",
+    summary: input.summary ?? "",
+    keyTakeaways: input.keyTakeaways ?? [],
+    excerpts: input.excerpts ?? [],
+    analystInterpretation: input.analystInterpretation ?? "",
+    storageBucket: input.storageBucket,
+    storagePath: input.storagePath,
+    originalFileName: input.originalFileName ?? input.fileName,
+    mimeType: input.mimeType,
+    fileSizeBytes: input.fileSizeBytes
+  }));
+}
+
+export async function linkFileToResearch(fileId: string, researchItemId: string) {
+  return runWithDataFallback(async () => {
+    const supabase = createSupabaseAdminClient();
+    if (!supabase) throw new Error("Supabase admin client unavailable");
+
+    const { error } = await supabase
+      .from("file_research_links")
+      .upsert({ file_id: fileId, research_item_id: researchItemId }, { onConflict: "file_id,research_item_id" });
+
+    if (error) throw error;
+    return { ok: true };
+  }, async () => ({ ok: true }));
+}
+
+export async function unlinkFileFromResearch(fileId: string, researchItemId: string) {
+  return runWithDataFallback(async () => {
+    const supabase = createSupabaseAdminClient();
+    if (!supabase) throw new Error("Supabase admin client unavailable");
+
+    const { error } = await supabase
+      .from("file_research_links")
+      .delete()
+      .eq("file_id", fileId)
+      .eq("research_item_id", researchItemId);
+
+    if (error) throw error;
+    return { ok: true };
+  }, async () => ({ ok: true }));
+}

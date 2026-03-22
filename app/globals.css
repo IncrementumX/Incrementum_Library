@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 38 33% 97%;
+  --foreground: 28 20% 16%;
+  --card: 42 30% 99%;
+  --card-foreground: 28 20% 16%;
+  --muted: 36 22% 93%;
+  --muted-foreground: 25 12% 42%;
+  --border: 30 18% 85%;
+  --input: 30 18% 85%;
+  --primary: 28 26% 24%;
+  --primary-foreground: 40 35% 98%;
+  --accent: 38 34% 92%;
+  --accent-foreground: 28 24% 22%;
+  --ring: 30 22% 32%;
+  --success: 143 28% 32%;
+  --warning: 33 85% 45%;
+  --danger: 8 62% 44%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(232, 220, 201, 0.45), transparent 30%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.95) 0%, rgba(247, 242, 234, 0.92) 100%);
+  color: hsl(var(--foreground));
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(191, 164, 126, 0.25);
+}
+
+.editorial-prose p {
+  @apply leading-8 text-[15px] text-muted-foreground md:text-base;
+}
+
+.editorial-prose p + p {
+  @apply mt-4;
+}
