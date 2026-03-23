@@ -17,3 +17,7 @@ export async function runWithDataFallback<T>(
     return fallback();
   }
 }
+
+export async function runWithoutFallback<T>(primary: () => Promise<T>) {
+  return primary();
+}

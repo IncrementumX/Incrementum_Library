@@ -1,6 +1,6 @@
 import { buildStoragePath, getStorageBucketName } from "@/lib/supabase/storage";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createFileRecord } from "@/lib/repositories/files";
+import { createFileRecord, createPersistedFileRecord } from "@/lib/repositories/files";
 import { getFolderById } from "@/lib/repositories/folders";
 import { generateFileSummary, saveGeneratedSummary } from "@/lib/services/summary-service";
 import { UploadFileInput } from "@/types/domain";
@@ -15,20 +15,29 @@ export async function uploadLibraryFile({ input, file }: UploadLibraryFileArgs) 
   const folderSlug = folder?.slug ?? "unassigned";
   const storagePath = buildStoragePath(folderSlug, input.fileName);
 
-  const stored = await uploadBinaryToStorage(file, storagePath);
+  const hasBinaryFile = file instanceof File;
+  const stored = hasBinaryFile ? await uploadBinaryToStorage(file, storagePath) : null;
 
-  const record = await createFileRecord({
+  if (hasBinaryFile && !stored) {
+    throw new Error("File upload did not complete successfully. Storage upload must succeed before creating the file record.");
+  }
+
+  const recordInput = {
     ...input,
     originalFileName: input.fileName,
-    storageBucket: stored?.bucket ?? getStorageBucketName(),
-    storagePath: stored?.path ?? storagePath,
-    processingStatus: "uploaded",
-    summaryStatus: "queued"
-  });
+    storageBucket: stored?.bucket,
+    storagePath: stored?.path,
+    processingStatus: hasBinaryFile ? ("uploaded" as const) : ("idle" as const),
+    summaryStatus: "queued" as const
+  };
+
+  const record = hasBinaryFile
+    ? await createPersistedFileRecord(recordInput)
+    : await createFileRecord(recordInput);
 
   return {
     file: record,
-    uploadState: stored ? "uploaded" : "idle",
+    uploadState: hasBinaryFile ? "uploaded" : "idle",
     storage: stored ?? {
       bucket: getStorageBucketName(),
       path: storagePath,
@@ -72,24 +81,28 @@ async function uploadBinaryToStorage(file: File | undefined, storagePath: string
     return null;
   }
 
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
-    return null;
+  try {
+    const supabase = createSupabaseAdminClient();
+    const bucket = getStorageBucketName();
+    const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
+      contentType: file.type,
+      upsert: false
+    });
+
+    if (error) {
+      throw new Error(`Supabase storage upload failed: ${error.message}`);
+    }
+
+    return {
+      bucket,
+      path: storagePath,
+      uploaded: true
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`File upload failed before record creation: ${error.message}`);
+    }
+
+    throw new Error("File upload failed before record creation due to an unknown storage error.");
   }
-
-  const bucket = getStorageBucketName();
-  const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
-    contentType: file.type,
-    upsert: false
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return {
-    bucket,
-    path: storagePath,
-    uploaded: true
-  };
 }

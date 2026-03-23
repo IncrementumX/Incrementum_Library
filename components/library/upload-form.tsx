@@ -28,6 +28,7 @@ export function UploadForm({ folders }: UploadFormProps) {
         const file = formData.get("file");
 
         startTransition(async () => {
+          setStatus(null);
           setProcessingState("uploading");
           setMessage("Uploading file...");
 
@@ -39,6 +40,7 @@ export function UploadForm({ folders }: UploadFormProps) {
           payload.set("publishedAt", String(formData.get("publishedAt") || ""));
           payload.set("tags", String(formData.get("tags") || ""));
           payload.set("notes", String(formData.get("notes") || ""));
+
           if (file instanceof File) {
             payload.set("file", file);
           }
@@ -48,23 +50,21 @@ export function UploadForm({ folders }: UploadFormProps) {
             body: payload
           });
 
+          const result = await response.json().catch(() => null);
+
           if (!response.ok) {
             setProcessingState("failed");
-            setMessage("Upload failed. Check the file and configuration, then try again.");
+            setMessage(
+              typeof result?.error === "string"
+                ? result.error
+                : "Upload failed. Check the file and configuration, then try again."
+            );
             return;
           }
 
-          setProcessingState("processing");
-          setMessage("File record created. Summary generation has been staged.");
-
-          const result = await response.json();
           setStatus(result.file?.kind ?? null);
-          setProcessingState(result.file?.processingStatus ?? "summary-ready");
-          setMessage(
-            result.mode === "mock"
-              ? "Fallback mode is active. The workflow is functioning, but the upload is not persisted yet."
-              : "File uploaded and persisted. Summary pipeline has started."
-          );
+          setProcessingState(result.file?.processingStatus ?? "failed");
+          setMessage("File uploaded to Supabase Storage and persisted. Summary pipeline has started.");
         });
       }}
     >

@@ -8,6 +8,16 @@ const env = {
   dataMode: process.env.DATA_MODE || "auto"
 } as const;
 
+export const requiredSupabasePublicEnvVars = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+] as const;
+
+export const requiredSupabaseAdminEnvVars = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY"
+] as const;
+
 export function isSupabaseConfigured() {
   return Boolean(env.supabaseUrl && env.supabaseAnonKey);
 }

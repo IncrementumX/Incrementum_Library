@@ -1,5 +1,5 @@
 import { seedFiles } from "@/lib/mock/seed-data";
-import { runWithDataFallback } from "@/lib/repositories/runtime";
+import { runWithDataFallback, runWithoutFallback } from "@/lib/repositories/runtime";
 import { createId, slugify } from "@/lib/repositories/utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LibraryFile, UploadFileInput } from "@/types/domain";
@@ -131,6 +131,40 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
     mimeType: input.mimeType,
     fileSizeBytes: input.fileSizeBytes
   }));
+}
+
+export async function createPersistedFileRecord(input: UploadFileInput & Partial<LibraryFile>) {
+  return runWithoutFallback(async () => {
+    const supabase = createSupabaseAdminClient();
+
+    const payload = {
+      folder_id: input.folderId,
+      slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+      title: input.title,
+      author: input.author ?? "Unknown",
+      kind: input.kind,
+      published_at: input.publishedAt ?? null,
+      tags: input.tags ?? [],
+      summary_status: input.summaryStatus ?? "queued",
+      processing_status: input.processingStatus ?? "uploaded",
+      summary: input.summary ?? "",
+      key_takeaways: input.keyTakeaways ?? [],
+      excerpts: input.excerpts ?? [],
+      analyst_interpretation: input.analystInterpretation ?? "",
+      storage_bucket: input.storageBucket ?? null,
+      storage_path: input.storagePath ?? null,
+      mime_type: input.mimeType ?? null,
+      file_size_bytes: input.fileSizeBytes ?? null,
+      original_file_name: input.originalFileName ?? input.fileName
+    };
+
+    const { data, error } = await supabase.from("files").insert(payload).select("*").single();
+    if (error) {
+      throw new Error(`Failed to create persisted file record: ${error.message}`);
+    }
+
+    return mapFile(data as FileRow);
+  });
 }
 
 export async function linkFileToResearch(fileId: string, researchItemId: string) {
