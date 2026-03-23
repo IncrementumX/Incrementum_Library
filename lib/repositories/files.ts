@@ -1,6 +1,6 @@
 import { seedFiles } from "@/lib/mock/seed-data";
 import { runWithDataFallback, runWithoutFallback } from "@/lib/repositories/runtime";
-import { createId, slugify } from "@/lib/repositories/utils";
+import { createId, createUniqueSlug, slugify } from "@/lib/repositories/utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LibraryFile, UploadFileInput } from "@/types/domain";
 
@@ -92,10 +92,11 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
   return runWithDataFallback(async () => {
     const supabase = createSupabaseAdminClient();
     if (!supabase) throw new Error("Supabase admin client unavailable");
+    const { finalSlug } = createUniqueSlug(input.title || input.fileName.replace(/\.[^.]+$/, ""));
 
     const payload = {
       folder_id: input.folderId,
-      slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+      slug: finalSlug,
       title: input.title,
       author: input.author ?? "Unknown",
       kind: input.kind,
@@ -119,7 +120,7 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
     return mapFile(data as FileRow);
   }, async () => ({
     id: createId("file"),
-    slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+    slug: createUniqueSlug(input.title || input.fileName.replace(/\.[^.]+$/, "")).finalSlug,
     folderId: input.folderId,
     title: input.title,
     author: input.author ?? "Unknown",
@@ -145,10 +146,11 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
 export async function createPersistedFileRecord(input: UploadFileInput & Partial<LibraryFile>) {
   return runWithoutFallback(async () => {
     const supabase = createSupabaseAdminClient();
+    const { baseSlug, finalSlug } = createUniqueSlug(input.title || input.fileName.replace(/\.[^.]+$/, ""));
 
     const payload = {
       folder_id: input.folderId,
-      slug: slugify(input.title || input.fileName.replace(/\.[^.]+$/, "")),
+      slug: finalSlug,
       title: input.title,
       author: input.author ?? "Unknown",
       kind: input.kind,
@@ -169,6 +171,8 @@ export async function createPersistedFileRecord(input: UploadFileInput & Partial
 
     console.info("[upload] db insert start", {
       title: payload.title,
+      baseSlug,
+      finalSlug: payload.slug,
       folderId: payload.folder_id,
       storageBucket: payload.storage_bucket,
       storagePath: payload.storage_path,
