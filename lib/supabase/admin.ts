@@ -1,12 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { env, isSupabaseAdminConfigured, requiredSupabaseAdminEnvVars } from "@/lib/env";
+import { env } from "@/lib/env";
 
 export function createSupabaseAdminClient() {
-  if (!isSupabaseAdminConfigured()) {
-    throw new Error(
-      `Supabase admin client is not configured. Missing required environment variables: ${requiredSupabaseAdminEnvVars.join(", ")}.`
-    );
+  if (!env.supabaseUrl) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  }
+
+  if (!env.supabaseServiceRoleKey) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
   }
 
   return createClient(env.supabaseUrl!, env.supabaseServiceRoleKey!, {

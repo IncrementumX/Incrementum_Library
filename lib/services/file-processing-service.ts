@@ -31,6 +31,13 @@ export async function uploadLibraryFile({ input, file }: UploadLibraryFileArgs) 
     summaryStatus: "queued" as const
   };
 
+  console.info("[upload] db record creation start", {
+    title: recordInput.title,
+    folderId: recordInput.folderId,
+    storageBucket: recordInput.storageBucket,
+    storagePath: recordInput.storagePath
+  });
+
   const record = hasBinaryFile
     ? await createPersistedFileRecord(recordInput)
     : await createFileRecord(recordInput);
@@ -84,14 +91,31 @@ async function uploadBinaryToStorage(file: File | undefined, storagePath: string
   try {
     const supabase = createSupabaseAdminClient();
     const bucket = getStorageBucketName();
+    console.info("[upload] storage upload start", {
+      bucket,
+      storagePath,
+      fileName: file.name,
+      mimeType: file.type,
+      size: file.size
+    });
     const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
       contentType: file.type,
       upsert: false
     });
 
     if (error) {
+      console.error("[upload] storage upload failed", {
+        bucket,
+        storagePath,
+        message: error.message
+      });
       throw new Error(`Supabase storage upload failed: ${error.message}`);
     }
+
+    console.info("[upload] storage upload success", {
+      bucket,
+      storagePath
+    });
 
     return {
       bucket,

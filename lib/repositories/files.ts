@@ -54,6 +54,15 @@ function mapFile(row: FileRow): LibraryFile {
   };
 }
 
+function normalizeNullableString(value: string | undefined | null) {
+  if (value == null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 export async function listFiles() {
   return runWithDataFallback(async () => {
     const supabase = createSupabaseAdminClient();
@@ -90,7 +99,7 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
       title: input.title,
       author: input.author ?? "Unknown",
       kind: input.kind,
-      published_at: input.publishedAt ?? null,
+      published_at: normalizeNullableString(input.publishedAt),
       tags: input.tags ?? [],
       summary_status: input.summaryStatus ?? "queued",
       processing_status: input.processingStatus ?? "uploaded",
@@ -98,11 +107,11 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
       key_takeaways: input.keyTakeaways ?? [],
       excerpts: input.excerpts ?? [],
       analyst_interpretation: input.analystInterpretation ?? "",
-      storage_bucket: input.storageBucket ?? null,
-      storage_path: input.storagePath ?? null,
-      mime_type: input.mimeType ?? null,
+      storage_bucket: normalizeNullableString(input.storageBucket),
+      storage_path: normalizeNullableString(input.storagePath),
+      mime_type: normalizeNullableString(input.mimeType),
       file_size_bytes: input.fileSizeBytes ?? null,
-      original_file_name: input.originalFileName ?? input.fileName
+      original_file_name: normalizeNullableString(input.originalFileName ?? input.fileName)
     };
 
     const { data, error } = await supabase.from("files").insert(payload).select("*").single();
@@ -143,7 +152,7 @@ export async function createPersistedFileRecord(input: UploadFileInput & Partial
       title: input.title,
       author: input.author ?? "Unknown",
       kind: input.kind,
-      published_at: input.publishedAt ?? null,
+      published_at: normalizeNullableString(input.publishedAt),
       tags: input.tags ?? [],
       summary_status: input.summaryStatus ?? "queued",
       processing_status: input.processingStatus ?? "uploaded",
@@ -151,17 +160,43 @@ export async function createPersistedFileRecord(input: UploadFileInput & Partial
       key_takeaways: input.keyTakeaways ?? [],
       excerpts: input.excerpts ?? [],
       analyst_interpretation: input.analystInterpretation ?? "",
-      storage_bucket: input.storageBucket ?? null,
-      storage_path: input.storagePath ?? null,
-      mime_type: input.mimeType ?? null,
+      storage_bucket: normalizeNullableString(input.storageBucket),
+      storage_path: normalizeNullableString(input.storagePath),
+      mime_type: normalizeNullableString(input.mimeType),
       file_size_bytes: input.fileSizeBytes ?? null,
-      original_file_name: input.originalFileName ?? input.fileName
+      original_file_name: normalizeNullableString(input.originalFileName ?? input.fileName)
     };
+
+    console.info("[upload] db insert start", {
+      title: payload.title,
+      folderId: payload.folder_id,
+      storageBucket: payload.storage_bucket,
+      storagePath: payload.storage_path,
+      sanitizedPayload: {
+        slug: payload.slug,
+        published_at: payload.published_at,
+        summary_status: payload.summary_status,
+        processing_status: payload.processing_status,
+        mime_type: payload.mime_type,
+        file_size_bytes: payload.file_size_bytes,
+        original_file_name: payload.original_file_name
+      }
+    });
 
     const { data, error } = await supabase.from("files").insert(payload).select("*").single();
     if (error) {
-      throw new Error(`Failed to create persisted file record: ${error.message}`);
+      console.error("[upload] db insert failed", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`DB insert failed: ${error.message}`);
     }
+
+    console.info("[upload] db insert success", {
+      fileId: data.id,
+      slug: data.slug
+    });
 
     return mapFile(data as FileRow);
   });
