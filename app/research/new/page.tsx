@@ -6,14 +6,9 @@ import { ResearchItemForm } from "@/components/research/research-item-form";
 import { RuntimeModeBadge } from "@/components/system/runtime-mode-badge";
 import { Button } from "@/components/ui/button";
 import { listAnalystPrompts } from "@/lib/repositories";
-import { ResearchEntityInputType } from "@/types/domain";
 
-export default async function NewResearchPage({
-  searchParams
-}: {
-  searchParams: Promise<{ type?: ResearchEntityInputType }>;
-}) {
-  const [{ type }, prompts] = await Promise.all([searchParams, listAnalystPrompts()]);
+export default async function NewResearchPage() {
+  const prompts = await listAnalystPrompts();
 
   return (
     <AppShell
@@ -21,7 +16,7 @@ export default async function NewResearchPage({
         <AnalystPanel
           prompts={prompts}
           title="Research Analyst"
-          description="New research items should begin from your chosen entity, then grow through files, updates, and notebook work."
+          description="New research now begins from a single asset. Add the asset, then let linked files, drafts, and the analyst build it out."
         />
       }
     >
@@ -30,14 +25,14 @@ export default async function NewResearchPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Research</p>
-              <h2 className="mt-4 font-serif text-4xl text-foreground">Create item</h2>
+              <h2 className="mt-4 font-serif text-4xl text-foreground">Create asset</h2>
             </div>
             <RuntimeModeBadge />
           </div>
         </section>
 
         <section className="rounded-[1.6rem] border border-border/80 bg-card/90 p-6 shadow-whisper">
-          <ResearchItemForm mode="create" defaultType={type ?? "asset"} />
+          <ResearchItemForm mode="create" />
         </section>
 
         <Button asChild variant="outline">

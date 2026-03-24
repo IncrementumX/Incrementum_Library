@@ -2,6 +2,13 @@
 
 Incrementum Library is a living investment research workspace centered around a resident analyst.
 
+The product is now asset-first:
+
+- Library is the source of truth for uploaded materials
+- Assets are the central research object
+- Important AI outputs stay editable by the user
+- The active investment framework shapes future analyst drafts
+
 The app now supports a clean dual mode:
 
 - `mock / fallback mode`
@@ -44,8 +51,6 @@ If you leave Supabase and AI credentials blank, the app stays in fallback mode a
 - `/library/[sourceSlug]`
 - `/research`
 - `/research/new`
-- `/research/sectors/[slug]`
-- `/research/sectors/[slug]/edit`
 - `/research/assets/[slug]`
 - `/research/assets/[slug]/edit`
 - `/insights`
@@ -62,7 +67,7 @@ If you leave Supabase and AI credentials blank, the app stays in fallback mode a
 - `lib/config/`
   - runtime mode and feature configuration
 - `lib/repositories/`
-  - folders, files, research, chats, insights, and analyst repositories
+  - folders, files, assets, frameworks, chats, insights, and analyst repositories
 - `lib/services/`
   - upload, processing, summary, and insight workflow services
 - `lib/supabase/`
@@ -77,19 +82,21 @@ If you leave Supabase and AI credentials blank, the app stays in fallback mode a
 - repository-based data access
 - centralized fallback vs Supabase mode selection
 - folder creation API boundary
-- file upload API boundary
+- multi-file upload API boundary
 - file processing pipeline shape
-- summary generation service boundary
+- persisted summary/excerpt save-back after upload
 - insight generation service boundary
-- research creation and edit form flow
-- file-to-research linking API boundary
+- asset creation and edit form flow
+- file-to-asset linking API boundary
+- investment framework repository and save flow
+- download/open route for stored files
 
 ## What Is Still Fallback / Preview
 
 - data persists only when Supabase is configured
 - uploads are non-persistent in fallback mode
 - AI summary generation degrades gracefully without `OPENAI_API_KEY`
-- chat sending, folder creation, and research creation are workflow-real but persistence depends on credentials
+- chat sending, folder creation, asset creation, and framework saving are workflow-real but persistence depends on credentials
 
 ## Supabase Preparation
 
@@ -97,6 +104,7 @@ See:
 
 - `supabase/README.md`
 - `supabase/migrations/0001_initial_schema.sql`
+- `supabase/migrations/0002_assets_pivot.sql`
 
 ## Verification
 

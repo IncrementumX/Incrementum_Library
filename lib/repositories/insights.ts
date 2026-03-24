@@ -19,16 +19,16 @@ export async function listInsights() {
       summary: String(row.summary),
       whatMatters: String(row.what_matters),
       relatedFileId: row.related_file_id ? String(row.related_file_id) : undefined,
-      relatedResearchId: row.related_research_id ? String(row.related_research_id) : undefined,
+      relatedAssetId: row.related_asset_id ? String(row.related_asset_id) : undefined,
       relatedThreadId: row.related_thread_id ? String(row.related_thread_id) : undefined,
       reviewStatus: (row.review_status as "draft" | "ready" | "reviewed" | null) ?? undefined
     }));
   }, async () => seedInsights);
 }
 
-export async function getInsightsForResearch(researchItemId: string) {
+export async function getInsightsForAsset(assetId: string) {
   const insights = await listInsights();
-  return insights.filter((insight) => insight.relatedResearchId === researchItemId);
+  return insights.filter((insight) => insight.relatedAssetId === assetId);
 }
 
 export async function createInsight(input: CreateInsightInput) {
@@ -42,7 +42,7 @@ export async function createInsight(input: CreateInsightInput) {
       summary: input.summary,
       what_matters: input.whatMatters,
       related_file_id: input.relatedFileId ?? null,
-      related_research_id: input.relatedResearchId ?? null,
+      related_asset_id: input.relatedAssetId ?? null,
       related_thread_id: input.relatedThreadId ?? null,
       review_status: "draft"
     };
@@ -56,7 +56,7 @@ export async function createInsight(input: CreateInsightInput) {
       summary: String(data.summary),
       whatMatters: String(data.what_matters),
       relatedFileId: data.related_file_id ? String(data.related_file_id) : undefined,
-      relatedResearchId: data.related_research_id ? String(data.related_research_id) : undefined,
+      relatedAssetId: data.related_asset_id ? String(data.related_asset_id) : undefined,
       relatedThreadId: data.related_thread_id ? String(data.related_thread_id) : undefined,
       reviewStatus: (data.review_status as "draft" | "ready" | "reviewed" | null) ?? undefined
     };
@@ -67,7 +67,7 @@ export async function createInsight(input: CreateInsightInput) {
     summary: input.summary,
     whatMatters: input.whatMatters,
     relatedFileId: input.relatedFileId,
-    relatedResearchId: input.relatedResearchId,
+    relatedAssetId: input.relatedAssetId,
     relatedThreadId: input.relatedThreadId,
     reviewStatus: "draft" as const
   }));

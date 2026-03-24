@@ -16,9 +16,9 @@ export async function listChatThreads() {
       id: String(row.id),
       title: String(row.title),
       updatedAt: String(row.updated_at),
-      contextType: row.context_type as "asset" | "sector" | "theme" | "general",
+      contextType: row.context_type as "asset" | "theme" | "general",
       contextLabel: String(row.context_label),
-      relatedResearchId: row.related_research_id ? String(row.related_research_id) : undefined,
+      relatedAssetId: row.related_asset_id ? String(row.related_asset_id) : undefined,
       preview: String(row.preview ?? "")
     }));
   }, async () => seedChatThreads);
@@ -29,9 +29,9 @@ export async function getThreadById(threadId: string) {
   return threads.find((thread) => thread.id === threadId);
 }
 
-export async function getThreadForResearch(researchItemId: string) {
+export async function getThreadForAsset(assetId: string) {
   const threads = await listChatThreads();
-  return threads.find((thread) => thread.relatedResearchId === researchItemId);
+  return threads.find((thread) => thread.relatedAssetId === assetId);
 }
 
 export async function getMessagesForThread(threadId: string) {
@@ -66,7 +66,7 @@ export async function createChatThread(input: CreateChatThreadInput) {
       title: input.title,
       context_type: input.contextType,
       context_label: input.contextLabel,
-      related_research_id: input.relatedResearchId ?? null,
+      related_asset_id: input.relatedAssetId ?? null,
       preview: ""
     };
 
@@ -77,9 +77,9 @@ export async function createChatThread(input: CreateChatThreadInput) {
       id: String(data.id),
       title: String(data.title),
       updatedAt: String(data.updated_at),
-      contextType: data.context_type as "asset" | "sector" | "theme" | "general",
+      contextType: data.context_type as "asset" | "theme" | "general",
       contextLabel: String(data.context_label),
-      relatedResearchId: data.related_research_id ? String(data.related_research_id) : undefined,
+      relatedAssetId: data.related_asset_id ? String(data.related_asset_id) : undefined,
       preview: String(data.preview ?? "")
     };
   }, async () => ({
@@ -88,7 +88,7 @@ export async function createChatThread(input: CreateChatThreadInput) {
     updatedAt: new Date().toISOString(),
     contextType: input.contextType,
     contextLabel: input.contextLabel,
-    relatedResearchId: input.relatedResearchId,
+    relatedAssetId: input.relatedAssetId,
     preview: ""
   }));
 }

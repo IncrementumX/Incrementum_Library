@@ -10,13 +10,12 @@ export type FileProcessingStatus =
   | "summary-ready"
   | "failed";
 
-export type ResearchItemType = "sector" | "asset";
-
-export type ResearchEntityInputType = "sector" | "asset" | "company";
+export type AssetStatus = "active" | "seeded";
+export type AssetDraftField = "executive_summary" | "what_matters" | "key_risks" | "counterview";
 
 export type ThesisImpact = "strengthens" | "weakens" | "mixed";
 
-export type ChatContextType = "asset" | "sector" | "theme" | "general";
+export type ChatContextType = "asset" | "theme" | "general";
 
 export interface LibraryFolder {
   id: string;
@@ -37,7 +36,7 @@ export interface LibraryFile {
   publishedAt: string;
   addedAt: string;
   tags: string[];
-  linkedResearchIds: string[];
+  linkedAssetIds: string[];
   summaryStatus: SummaryStatus;
   processingStatus: FileProcessingStatus;
   summary: string;
@@ -51,9 +50,9 @@ export interface LibraryFile {
   fileSizeBytes?: number;
 }
 
-export interface ResearchUpdate {
+export interface AssetUpdate {
   id: string;
-  researchItemId: string;
+  assetId: string;
   title: string;
   happenedAt: string;
   whatChanged: string;
@@ -62,19 +61,29 @@ export interface ResearchUpdate {
   analystView: string;
 }
 
-export interface ResearchItem {
+export interface EditableDraftContent {
+  generated: string;
+  edited?: string;
+  resolved: string;
+}
+
+export interface Asset {
   id: string;
   slug: string;
   title: string;
-  type: ResearchItemType;
-  categoryLabel: string;
-  status: "active" | "seeded";
+  symbol?: string;
+  assetType?: string;
+  status: AssetStatus;
+  thesis: string;
   executiveSummary: string;
-  keyPillars: string[];
-  coreView: string;
+  whatMatters: string;
+  keyRisks: string;
+  counterview: string;
+  notes: string;
   linkedFileIds: string[];
   updateIds: string[];
   primaryThreadId?: string;
+  drafts: Record<AssetDraftField, EditableDraftContent>;
 }
 
 export interface Insight {
@@ -84,7 +93,7 @@ export interface Insight {
   summary: string;
   whatMatters: string;
   relatedFileId?: string;
-  relatedResearchId?: string;
+  relatedAssetId?: string;
   relatedThreadId?: string;
   reviewStatus?: "draft" | "ready" | "reviewed";
 }
@@ -95,7 +104,7 @@ export interface ChatThread {
   updatedAt: string;
   contextType: ChatContextType;
   contextLabel: string;
-  relatedResearchId?: string;
+  relatedAssetId?: string;
   preview: string;
 }
 
@@ -119,30 +128,40 @@ export interface CreateFolderInput {
   description?: string;
 }
 
-export interface CreateResearchItemInput {
+export interface CreateAssetInput {
   title: string;
-  type: ResearchEntityInputType;
+  symbol?: string;
+  assetType?: string;
+  thesis?: string;
   executiveSummary?: string;
-  coreView?: string;
+  whatMatters?: string;
+  keyRisks?: string;
+  counterview?: string;
+  notes?: string;
 }
 
-export interface UpdateResearchItemInput {
+export interface UpdateAssetInput {
   title?: string;
+  symbol?: string;
+  assetType?: string;
+  thesis?: string;
   executiveSummary?: string;
-  coreView?: string;
-  keyPillars?: string[];
+  whatMatters?: string;
+  keyRisks?: string;
+  counterview?: string;
+  notes?: string;
 }
 
-export interface FileLinkInput {
+export interface FileAssetLinkInput {
   fileId: string;
-  researchItemId: string;
+  assetId: string;
 }
 
 export interface CreateChatThreadInput {
   title: string;
   contextType: ChatContextType;
   contextLabel: string;
-  relatedResearchId?: string;
+  relatedAssetId?: string;
 }
 
 export interface CreateChatMessageInput {
@@ -156,7 +175,7 @@ export interface CreateInsightInput {
   summary: string;
   whatMatters: string;
   relatedFileId?: string;
-  relatedResearchId?: string;
+  relatedAssetId?: string;
   relatedThreadId?: string;
 }
 
@@ -175,6 +194,33 @@ export interface UploadFileInput {
 export interface FileSummaryResult {
   summary: string;
   keyTakeaways: string[];
+  excerpts?: string[];
   analystInterpretation: string;
   mode: "generated" | "fallback";
+}
+
+export interface AssetDraftRecord {
+  id: string;
+  assetId: string;
+  field: AssetDraftField;
+  generatedContent: string;
+  editedContent?: string;
+  updatedAt?: string;
+}
+
+export interface InvestmentFramework {
+  id: string;
+  name: string;
+  description: string;
+  instructions: string;
+  questionSet: string[];
+  checklist: string[];
+  keyLenses: string[];
+  preferredMemoStructure: string[];
+  redFlags: string[];
+  outputPreferences: string[];
+  isActive: boolean;
+  version: number;
+  createdAt?: string;
+  updatedAt?: string;
 }

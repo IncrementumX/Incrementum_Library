@@ -4,7 +4,7 @@ import { AnalystPanel } from "@/components/analyst/analyst-panel";
 import { AppShell } from "@/components/layout/app-shell";
 import { ResearchItemForm } from "@/components/research/research-item-form";
 import { RuntimeModeBadge } from "@/components/system/runtime-mode-badge";
-import { listAnalystPrompts, getResearchItemBySlug } from "@/lib/repositories";
+import { getAssetBySlug, listAnalystPrompts } from "@/lib/repositories";
 
 export default async function EditAssetResearchPage({
   params
@@ -12,7 +12,7 @@ export default async function EditAssetResearchPage({
   params: Promise<{ slug: string }>;
 }) {
   const [{ slug }, prompts] = await Promise.all([params, listAnalystPrompts()]);
-  const item = await getResearchItemBySlug(slug, "asset");
+  const item = await getAssetBySlug(slug);
 
   if (!item) {
     notFound();
@@ -20,7 +20,7 @@ export default async function EditAssetResearchPage({
 
   return (
     <AppShell
-      analystPanel={<AnalystPanel prompts={prompts} title={`${item.title} Analyst`} description="Refine the thesis directly from the item form, then return to the working thread." />}
+      analystPanel={<AnalystPanel prompts={prompts} title={`${item.title} Analyst`} description="Refine the thesis and editable drafts directly from the asset form, then return to the working thread." />}
     >
       <div className="space-y-8">
         <section className="rounded-[1.8rem] border border-border/80 bg-card/90 px-6 py-7 shadow-whisper">

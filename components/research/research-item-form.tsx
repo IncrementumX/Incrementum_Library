@@ -5,15 +5,14 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ResearchEntityInputType, ResearchItem } from "@/types/domain";
+import { Asset } from "@/types/domain";
 
 interface ResearchItemFormProps {
   mode: "create" | "edit";
-  defaultType?: ResearchEntityInputType;
-  item?: ResearchItem;
+  item?: Asset;
 }
 
-export function ResearchItemForm({ mode, defaultType = "asset", item }: ResearchItemFormProps) {
+export function ResearchItemForm({ mode, item }: ResearchItemFormProps) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [isPending, startTransition] = useTransition();
 
@@ -34,13 +33,14 @@ export function ResearchItemForm({ mode, defaultType = "asset", item }: Research
             },
             body: JSON.stringify({
               title: formData.get("title"),
-              type: formData.get("type"),
+              symbol: formData.get("symbol"),
+              assetType: formData.get("assetType"),
+              thesis: formData.get("thesis"),
               executiveSummary: formData.get("executiveSummary"),
-              coreView: formData.get("coreView"),
-              keyPillars: String(formData.get("keyPillars") || "")
-                .split("\n")
-                .map((value) => value.trim())
-                .filter(Boolean)
+              whatMatters: formData.get("whatMatters"),
+              keyRisks: formData.get("keyRisks"),
+              counterview: formData.get("counterview"),
+              notes: formData.get("notes")
             })
           });
 
@@ -48,35 +48,41 @@ export function ResearchItemForm({ mode, defaultType = "asset", item }: Research
         });
       }}
     >
-      <select
-        name="type"
-        defaultValue={item ? (item.categoryLabel.toLowerCase() === "company" ? "company" : item.type) : defaultType}
-        className="flex h-11 w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground outline-none"
-      >
-        <option value="asset">Asset</option>
-        <option value="sector">Sector</option>
-        <option value="company">Company</option>
-      </select>
-      <Input name="title" defaultValue={item?.title} placeholder="Title" required />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input name="title" defaultValue={item?.title} placeholder="Asset name" required />
+        <Input name="symbol" defaultValue={item?.symbol} placeholder="Ticker or symbol (optional)" />
+      </div>
+      <Input name="assetType" defaultValue={item?.assetType} placeholder="Asset type (equity, commodity, crypto, macro...)" />
+      <Textarea name="thesis" defaultValue={item?.thesis} placeholder="Thesis" />
       <Textarea
         name="executiveSummary"
-        defaultValue={item?.executiveSummary}
-        placeholder="Executive Summary"
+        defaultValue={item?.drafts.executive_summary.edited ?? item?.drafts.executive_summary.generated ?? item?.executiveSummary}
+        placeholder="Executive Summary draft"
       />
-      <Textarea name="coreView" defaultValue={item?.coreView} placeholder="Core View" />
       <Textarea
-        name="keyPillars"
-        defaultValue={item?.keyPillars.join("\n")}
-        placeholder="One key pillar per line"
+        name="whatMatters"
+        defaultValue={item?.drafts.what_matters.edited ?? item?.drafts.what_matters.generated ?? item?.whatMatters}
+        placeholder="What matters"
       />
+      <Textarea
+        name="keyRisks"
+        defaultValue={item?.drafts.key_risks.edited ?? item?.drafts.key_risks.generated ?? item?.keyRisks}
+        placeholder="Key risks"
+      />
+      <Textarea
+        name="counterview"
+        defaultValue={item?.drafts.counterview.edited ?? item?.drafts.counterview.generated ?? item?.counterview}
+        placeholder="Counterview"
+      />
+      <Textarea name="notes" defaultValue={item?.notes} placeholder="Notes" />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {status === "idle" && `${mode === "create" ? "Create" : "Update"} a research item in the current workspace.`}
-          {status === "saving" && "Saving research item..."}
-          {status === "saved" && "Saved. In fallback mode this remains a non-persistent preview."}
+          {status === "idle" && `${mode === "create" ? "Create" : "Update"} an asset thread with editable analyst drafts.`}
+          {status === "saving" && "Saving asset..."}
+          {status === "saved" && "Saved. Draft fields remain editable by you."}
           {status === "failed" && "Save failed. Check configuration and try again."}
         </p>
-        <Button disabled={isPending}>{isPending ? "Saving..." : mode === "create" ? "Create" : "Save Changes"}</Button>
+        <Button disabled={isPending}>{isPending ? "Saving..." : mode === "create" ? "Create Asset" : "Save Changes"}</Button>
       </div>
     </form>
   );

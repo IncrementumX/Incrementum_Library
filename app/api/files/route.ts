@@ -42,51 +42,93 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
+    const incomingFiles = formData.getAll("files").filter((entry): entry is File => entry instanceof File);
+    const singleFile = formData.get("file");
+    const files = incomingFiles.length ? incomingFiles : singleFile instanceof File ? [singleFile] : [];
 
-    if (!(file instanceof File)) {
+    if (!files.length) {
       console.error("[upload] request invalid", {
         reason: "missing file"
       });
       return NextResponse.json({ error: "No file was provided." }, { status: 400 });
     }
 
-    const uploaded = await uploadLibraryFile({
-      input: {
-        folderId: String(formData.get("folderId")),
-        title: String(formData.get("title")),
-        author: String(formData.get("author") || "Unknown"),
-        kind: String(formData.get("kind")) as "Report" | "Presentation" | "Transcript" | "Research Letter" | "Memo",
-        publishedAt: String(formData.get("publishedAt") || "").trim() || undefined,
-        tags: String(formData.get("tags") || "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
-        fileName: file.name,
-        fileSizeBytes: file.size,
-        mimeType: file.type
-      },
-      file
-    });
+    const results = [];
+    const failures = [];
 
-    const processing = await requestFileProcessing(uploaded.file.id);
-    const summarized = await processFileSummary({
-      title: uploaded.file.title,
-      author: uploaded.file.author,
-      kind: uploaded.file.kind,
-      file: uploaded.file
-    });
+    for (const file of files) {
+      try {
+        const derivedTitle = String(formData.get("title") || "").trim() || file.name.replace(/\.[^.]+$/, "");
 
-    console.info("[upload] request completed", {
-      fileId: summarized.file.id,
-      processingStatus: summarized.file.processingStatus
-    });
+        const uploaded = await uploadLibraryFile({
+          input: {
+            folderId: String(formData.get("folderId")),
+            title: files.length === 1 ? derivedTitle : file.name.replace(/\.[^.]+$/, ""),
+            author: String(formData.get("author") || "Unknown"),
+            kind: String(formData.get("kind")) as "Report" | "Presentation" | "Transcript" | "Research Letter" | "Memo",
+            publishedAt: String(formData.get("publishedAt") || "").trim() || undefined,
+            tags: String(formData.get("tags") || "")
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+            fileName: file.name,
+            fileSizeBytes: file.size,
+            mimeType: file.type
+          },
+          file
+        });
+
+        const processing = await requestFileProcessing(uploaded.file.id);
+        const summarized = await processFileSummary({
+          title: uploaded.file.title,
+          author: uploaded.file.author,
+          kind: uploaded.file.kind,
+          file: uploaded.file
+        });
+
+        console.info("[upload] request completed", {
+          fileId: summarized.file.id,
+          processingStatus: summarized.file.processingStatus
+        });
+
+        results.push({
+          processing,
+          file: summarized.file,
+          summary: summarized.summary
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown upload error.";
+        failures.push({
+          fileName: file.name,
+          error: message
+        });
+      }
+    }
+
+    const acceptedCount = results.length;
+    const rejectedCount = failures.length;
+
+    if (!acceptedCount) {
+      return NextResponse.json(
+        {
+          error: failures[0]?.error ?? "All uploads failed.",
+          acceptedCount,
+          rejectedCount,
+          failures
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       mode: getResolvedDataMode(),
-      processing,
-      file: summarized.file,
-      summary: summarized.summary
+      processing: results[0]?.processing,
+      file: results[0]?.file,
+      summary: results[0]?.summary,
+      files: results.map((entry) => entry.file),
+      acceptedCount,
+      rejectedCount,
+      failures
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown upload error.";

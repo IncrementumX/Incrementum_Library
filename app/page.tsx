@@ -10,25 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   listAnalystPrompts,
+  listAssets,
   listChatThreads,
   listFiles,
   listFolders,
-  listInsights,
-  listResearchItems
+  listInsights
 } from "@/lib/repositories";
 
 export default async function HomePage() {
-  const [prompts, files, folders, researchItems, threads, insights] = await Promise.all([
+  const [prompts, files, folders, assets, threads, insights] = await Promise.all([
     listAnalystPrompts(),
     listFiles(),
     listFolders(),
-    listResearchItems(),
+    listAssets(),
     listChatThreads(),
     listInsights()
   ]);
 
   const recentFiles = files.slice(0, 3);
-  const activeResearch = researchItems.slice(0, 3);
+  const activeResearch = assets.slice(0, 3);
   const recentChats = threads.slice(0, 3);
 
   return (

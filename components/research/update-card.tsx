@@ -1,10 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDisplayDate } from "@/lib/utils";
-import { ResearchUpdate } from "@/types/domain";
+import { AssetUpdate } from "@/types/domain";
 
 interface UpdateCardProps {
-  update: ResearchUpdate;
+  update: AssetUpdate;
 }
 
 const impactVariant = {

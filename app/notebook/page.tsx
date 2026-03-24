@@ -22,7 +22,7 @@ export default async function NotebookPage() {
         <AnalystPanel
           prompts={prompts}
           title="Notebook Analyst"
-          description="Treat Notebook as ongoing conversation, not as a dead note archive. Each thread can stay attached to an asset, sector, or broader theme."
+          description="Treat Notebook as ongoing conversation, not as a dead note archive. Each thread can stay attached to an asset or broader theme."
         />
       }
     >
@@ -35,7 +35,7 @@ export default async function NotebookPage() {
             </div>
             <h2 className="mt-4 font-serif text-4xl text-foreground">Analyst threads</h2>
             <p className="mt-4 max-w-reading text-base leading-8 text-muted-foreground">
-              Create chats, continue them over time, and keep each one tied to a research context when needed.
+              Create chats, continue them over time, and keep each one tied to an asset context when needed.
             </p>
           </div>
           <Button>
@@ -76,7 +76,7 @@ export default async function NotebookPage() {
         ) : (
           <Card>
             <CardContent className="p-6 text-sm leading-7 text-muted-foreground">
-              No threads yet. Create the first analyst conversation and attach it to a research item or theme.
+              No threads yet. Create the first analyst conversation and attach it to an asset or theme.
             </CardContent>
           </Card>
         )}

@@ -8,6 +8,6 @@ export async function generateInsightFromFile(file: LibraryFile) {
     whatMatters:
       file.analystInterpretation || "This file has been staged for analyst review, but the final insight still needs to be confirmed.",
     relatedFileId: file.id,
-    relatedResearchId: file.linkedResearchIds[0]
+    relatedAssetId: file.linkedAssetIds[0]
   });
 }

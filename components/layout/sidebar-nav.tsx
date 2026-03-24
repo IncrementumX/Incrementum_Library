@@ -51,7 +51,7 @@ export function SidebarNav() {
         <div className="mt-auto rounded-[1.4rem] border border-border/80 bg-card/85 p-4 shadow-whisper">
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Workspace</p>
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Add materials, define research items, and keep the analyst working inside your threads.
+            Add materials, define assets, and keep the analyst working inside your threads.
           </p>
         </div>
       </div>

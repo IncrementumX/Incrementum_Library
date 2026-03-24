@@ -21,9 +21,9 @@ export function InsightCard({ insight }: InsightCardProps) {
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">What Matters</p>
         <p className="mt-2 text-sm leading-7 text-foreground">{insight.whatMatters}</p>
       </div>
-      {insight.relatedResearchId ? (
+      {insight.relatedAssetId ? (
         <p className="mt-4 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Related research · <Link href="/research" className="text-foreground">open in research</Link>
+          Related asset · <Link href="/research" className="text-foreground">open in research</Link>
         </p>
       ) : null}
     </article>

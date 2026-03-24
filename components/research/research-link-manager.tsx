@@ -6,23 +6,23 @@ import { Button } from "@/components/ui/button";
 import { LibraryFile } from "@/types/domain";
 
 interface ResearchLinkManagerProps {
-  researchItemId: string;
+  assetId: string;
   linkedFileTitles: string[];
   availableFiles: LibraryFile[];
 }
 
 export function ResearchLinkManager({
-  researchItemId,
+  assetId,
   linkedFileTitles,
   availableFiles
 }: ResearchLinkManagerProps) {
-  const [status, setStatus] = useState("Select a file to attach to this research thread.");
+  const [status, setStatus] = useState("Select a file to attach to this asset thread.");
   const [selectedFileId, setSelectedFileId] = useState(availableFiles[0]?.id ?? "");
   const [isPending, startTransition] = useTransition();
 
   return (
     <div className="space-y-4 rounded-[1.4rem] border border-border/80 bg-card/90 p-4">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Attach file from research</p>
+      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Attach file to asset</p>
       <select
         value={selectedFileId}
         onChange={(event) => setSelectedFileId(event.target.value)}
@@ -45,7 +45,7 @@ export function ResearchLinkManager({
           disabled={!selectedFileId || isPending}
           onClick={() =>
             startTransition(async () => {
-              const response = await fetch(`/api/research/${researchItemId}/link-file`, {
+              const response = await fetch(`/api/research/${assetId}/link-file`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json"

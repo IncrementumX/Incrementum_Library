@@ -25,7 +25,7 @@ type FileRow = {
   mime_type: string | null;
   file_size_bytes: number | null;
   original_file_name: string | null;
-  file_research_links?: Array<{ research_item_id: string }>;
+  asset_files?: Array<{ asset_id: string }>;
 };
 
 function mapFile(row: FileRow): LibraryFile {
@@ -39,7 +39,7 @@ function mapFile(row: FileRow): LibraryFile {
     publishedAt: row.published_at ?? row.added_at,
     addedAt: row.added_at,
     tags: row.tags ?? [],
-    linkedResearchIds: row.file_research_links?.map((link) => link.research_item_id) ?? [],
+    linkedAssetIds: row.asset_files?.map((link) => link.asset_id) ?? [],
     summaryStatus: row.summary_status as LibraryFile["summaryStatus"],
     processingStatus: (row.processing_status ?? "uploaded") as LibraryFile["processingStatus"],
     summary: row.summary,
@@ -70,7 +70,7 @@ export async function listFiles() {
 
     const { data, error } = await supabase
       .from("files")
-      .select("*, file_research_links(research_item_id)")
+      .select("*, asset_files(asset_id)")
       .order("added_at", { ascending: false });
 
     if (error) throw error;
@@ -86,6 +86,11 @@ export async function listFilesByFolder(folderId: string) {
 export async function getFileBySlug(slug: string) {
   const files = await listFiles();
   return files.find((file) => file.slug === slug);
+}
+
+export async function getFileById(fileId: string) {
+  const files = await listFiles();
+  return files.find((file) => file.id === fileId);
 }
 
 export async function createFileRecord(input: UploadFileInput & Partial<LibraryFile>) {
@@ -128,7 +133,7 @@ export async function createFileRecord(input: UploadFileInput & Partial<LibraryF
     publishedAt: input.publishedAt ?? new Date().toISOString(),
     addedAt: new Date().toISOString(),
     tags: input.tags ?? [],
-    linkedResearchIds: [],
+    linkedAssetIds: [],
     summaryStatus: input.summaryStatus ?? "queued",
     processingStatus: input.processingStatus ?? "uploaded",
     summary: input.summary ?? "",
@@ -206,30 +211,30 @@ export async function createPersistedFileRecord(input: UploadFileInput & Partial
   });
 }
 
-export async function linkFileToResearch(fileId: string, researchItemId: string) {
+export async function linkFileToAsset(fileId: string, assetId: string) {
   return runWithDataFallback(async () => {
     const supabase = createSupabaseAdminClient();
     if (!supabase) throw new Error("Supabase admin client unavailable");
 
     const { error } = await supabase
-      .from("file_research_links")
-      .upsert({ file_id: fileId, research_item_id: researchItemId }, { onConflict: "file_id,research_item_id" });
+      .from("asset_files")
+      .upsert({ file_id: fileId, asset_id: assetId }, { onConflict: "file_id,asset_id" });
 
     if (error) throw error;
     return { ok: true };
   }, async () => ({ ok: true }));
 }
 
-export async function unlinkFileFromResearch(fileId: string, researchItemId: string) {
+export async function unlinkFileFromAsset(fileId: string, assetId: string) {
   return runWithDataFallback(async () => {
     const supabase = createSupabaseAdminClient();
     if (!supabase) throw new Error("Supabase admin client unavailable");
 
     const { error } = await supabase
-      .from("file_research_links")
+      .from("asset_files")
       .delete()
       .eq("file_id", fileId)
-      .eq("research_item_id", researchItemId);
+      .eq("asset_id", assetId);
 
     if (error) throw error;
     return { ok: true };

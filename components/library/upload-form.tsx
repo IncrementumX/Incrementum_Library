@@ -11,12 +11,19 @@ interface UploadFormProps {
   folders: LibraryFolder[];
 }
 
+type UploadEntryState = "idle" | "uploading" | "uploaded" | "processing" | "summary-ready" | "failed";
+
+interface UploadEntry {
+  fileName: string;
+  state: UploadEntryState;
+  message: string;
+}
+
 export function UploadForm({ folders }: UploadFormProps) {
   const [status, setStatus] = useState<UploadFileInput["kind"] | null>(null);
-  const [processingState, setProcessingState] = useState<
-    "idle" | "uploading" | "uploaded" | "processing" | "summary-ready" | "failed"
-  >("idle");
-  const [message, setMessage] = useState("Upload a file and stage it for analyst processing.");
+  const [processingState, setProcessingState] = useState<UploadEntryState>("idle");
+  const [message, setMessage] = useState("Upload one or more files and stage each one for grounded analyst processing.");
+  const [entries, setEntries] = useState<UploadEntry[]>([]);
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -25,12 +32,13 @@ export function UploadForm({ folders }: UploadFormProps) {
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const file = formData.get("file");
+        const files = Array.from((event.currentTarget.elements.namedItem("files") as HTMLInputElement | null)?.files ?? []);
 
         startTransition(async () => {
           setStatus(null);
           setProcessingState("uploading");
-          setMessage("Uploading file...");
+          setEntries(files.map((file) => ({ fileName: file.name, state: "uploading", message: "Uploading..." })));
+          setMessage(files.length > 1 ? "Uploading files..." : "Uploading file...");
 
           const payload = new FormData();
           payload.set("folderId", String(formData.get("folderId")));
@@ -41,9 +49,9 @@ export function UploadForm({ folders }: UploadFormProps) {
           payload.set("tags", String(formData.get("tags") || ""));
           payload.set("notes", String(formData.get("notes") || ""));
 
-          if (file instanceof File) {
-            payload.set("file", file);
-          }
+          files.forEach((file) => {
+            payload.append("files", file);
+          });
 
           const response = await fetch("/api/files", {
             method: "POST",
@@ -54,6 +62,13 @@ export function UploadForm({ folders }: UploadFormProps) {
 
           if (!response.ok) {
             setProcessingState("failed");
+            setEntries(
+              files.map((file) => ({
+                fileName: file.name,
+                state: "failed",
+                message: typeof result?.error === "string" ? result.error : "Upload failed."
+              }))
+            );
             setMessage(
               typeof result?.error === "string"
                 ? result.error
@@ -62,9 +77,26 @@ export function UploadForm({ folders }: UploadFormProps) {
             return;
           }
 
-          setStatus(result.file?.kind ?? null);
-          setProcessingState(result.file?.processingStatus ?? "failed");
-          setMessage("File uploaded to Supabase Storage and persisted. Summary pipeline has started.");
+          const uploadedFiles = Array.isArray(result?.files) ? result.files : result?.file ? [result.file] : [];
+          const failures = Array.isArray(result?.failures) ? result.failures : [];
+
+          setStatus(uploadedFiles[0]?.kind ?? null);
+          setProcessingState(uploadedFiles[0]?.processingStatus ?? "summary-ready");
+          setEntries(
+            files.map((file) => {
+              const uploaded = uploadedFiles.find((entry: { originalFileName?: string; title?: string }) => entry.originalFileName === file.name || entry.title === file.name.replace(/\.[^.]+$/, ""));
+              const failure = failures.find((entry: { fileName: string }) => entry.fileName === file.name);
+
+              return {
+                fileName: file.name,
+                state: failure ? "failed" : uploaded?.processingStatus ?? "summary-ready",
+                message: failure ? failure.error : "Uploaded, persisted, and queued for summary."
+              };
+            })
+          );
+          setMessage(
+            `Accepted ${result.acceptedCount ?? uploadedFiles.length} file${(result.acceptedCount ?? uploadedFiles.length) === 1 ? "" : "s"}. Rejected ${result.rejectedCount ?? failures.length}.`
+          );
         });
       }}
     >
@@ -79,7 +111,7 @@ export function UploadForm({ folders }: UploadFormProps) {
           </option>
         ))}
       </select>
-      <Input name="title" placeholder="Document title" required />
+      <Input name="title" placeholder="Document title for single-file upload (optional for batch)" />
       <Input name="author" placeholder="Author or source" />
       <div className="grid gap-4 md:grid-cols-2">
         <select
@@ -96,17 +128,31 @@ export function UploadForm({ folders }: UploadFormProps) {
         <Input name="publishedAt" placeholder="Published date (YYYY-MM-DD)" />
       </div>
       <Input name="tags" placeholder="Tags, comma separated" />
-      <Input name="file" type="file" required />
+      <Input name="files" type="file" multiple required />
       <Textarea name="notes" placeholder="Optional upload note for the analyst" />
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-muted-foreground">
-          <p>{message}</p>
-          <p className="mt-1 uppercase tracking-[0.16em]">
-            State: {processingState}
-            {status ? ` · ${status}` : ""}
-          </p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">
+            <p>{message}</p>
+            <p className="mt-1 uppercase tracking-[0.16em]">
+              State: {processingState}
+              {status ? ` · ${status}` : ""}
+            </p>
+          </div>
+          <Button disabled={isPending}>{isPending ? "Uploading..." : "Upload Files"}</Button>
         </div>
-        <Button disabled={isPending}>{isPending ? "Uploading..." : "Upload File"}</Button>
+        {entries.length ? (
+          <div className="space-y-2 rounded-[1.2rem] border border-border/80 bg-card/80 p-4">
+            {entries.map((entry) => (
+              <div key={entry.fileName} className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                <span className="text-foreground">{entry.fileName}</span>
+                <span className="text-muted-foreground">
+                  {entry.state} · {entry.message}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </form>
   );

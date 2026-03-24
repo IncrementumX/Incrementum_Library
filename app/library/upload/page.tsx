@@ -25,12 +25,12 @@ export default async function LibraryUploadPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Library</p>
-              <h2 className="mt-4 font-serif text-4xl text-foreground">Add file</h2>
+              <h2 className="mt-4 font-serif text-4xl text-foreground">Add files</h2>
             </div>
             <RuntimeModeBadge />
           </div>
           <p className="mt-4 max-w-reading text-base leading-8 text-muted-foreground">
-            This flow is ready for real uploads later. In fallback mode it still walks through the full product state progression.
+            Each file should upload, persist, and process independently. Use this layer as the source of truth for the analyst.
           </p>
         </section>
 

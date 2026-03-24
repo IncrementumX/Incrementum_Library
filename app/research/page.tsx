@@ -7,14 +7,10 @@ import { ResearchItemCard } from "@/components/research/research-item-card";
 import { RuntimeModeBadge } from "@/components/system/runtime-mode-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listAnalystPrompts, listResearchByType } from "@/lib/repositories";
+import { listAnalystPrompts, listAssets } from "@/lib/repositories";
 
 export default async function ResearchPage() {
-  const [prompts, sectors, assets] = await Promise.all([
-    listAnalystPrompts(),
-    listResearchByType("sector"),
-    listResearchByType("asset")
-  ]);
+  const [prompts, assets] = await Promise.all([listAnalystPrompts(), listAssets()]);
 
   return (
     <AppShell
@@ -22,7 +18,7 @@ export default async function ResearchPage() {
         <AnalystPanel
           prompts={prompts}
           title="Research Analyst"
-          description="Research should feel user-seeded. Define the asset or sector first, then let the analyst build on top of your materials and questions."
+          description="Assets are now the center of research. Define the asset first, then let the analyst build on top of linked files, your framework, and your edits."
         />
       }
     >
@@ -34,57 +30,32 @@ export default async function ResearchPage() {
                 <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Research</p>
                 <RuntimeModeBadge />
               </div>
-              <h2 className="mt-4 font-serif text-4xl text-foreground">Assets and sectors</h2>
+              <h2 className="mt-4 font-serif text-4xl text-foreground">Assets</h2>
               <p className="mt-4 max-w-reading text-base leading-8 text-muted-foreground">
-                Keep this layer thesis-first and explicitly defined by you. The analyst should work from what you add, not invent a world on its own.
+                Keep this layer thesis-first and explicitly defined by you. Each asset should become a living research thread grounded in linked files and revised with your edits.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button asChild variant="outline">
-                <Link href="/research/new?type=sector">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Sector
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/research/new?type=asset">
+              <Button asChild>
+                <Link href="/research/new">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Asset
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link href="/research/new?type=company">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Company
                 </Link>
               </Button>
             </div>
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-3xl">Sectors</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {sectors.map((item) => (
-                <ResearchItemCard key={item.id} item={item} />
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-3xl">Assets</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {assets.map((item) => (
-                <ResearchItemCard key={item.id} item={item} />
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl">Asset threads</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            {assets.map((item) => (
+              <ResearchItemCard key={item.id} item={item} />
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </AppShell>
   );

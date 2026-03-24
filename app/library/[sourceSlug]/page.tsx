@@ -10,10 +10,11 @@ import { RuntimeModeBadge } from "@/components/system/runtime-mode-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  getActiveInvestmentFramework,
   getFileBySlug,
   getFolderById,
   listAnalystPrompts,
-  listResearchItems
+  listAssets
 } from "@/lib/repositories";
 import { formatDisplayDate } from "@/lib/utils";
 
@@ -23,10 +24,11 @@ export default async function SourceDetailPage({
   params: Promise<{ sourceSlug: string }>;
 }) {
   const { sourceSlug } = await params;
-  const [prompts, file, allResearchItems] = await Promise.all([
+  const [prompts, file, allAssets, activeFramework] = await Promise.all([
     listAnalystPrompts(),
     getFileBySlug(sourceSlug),
-    listResearchItems()
+    listAssets(),
+    getActiveInvestmentFramework()
   ]);
 
   if (!file) {
@@ -34,7 +36,7 @@ export default async function SourceDetailPage({
   }
 
   const folder = await getFolderById(file.folderId);
-  const linkedResearch = allResearchItems.filter((item) => file.linkedResearchIds.includes(item.id));
+  const linkedAssets = allAssets.filter((item) => file.linkedAssetIds.includes(item.id));
 
   return (
     <AppShell
@@ -58,6 +60,13 @@ export default async function SourceDetailPage({
           <p className="mt-5 text-base leading-8 text-muted-foreground">
             {file.author} · Published {formatDisplayDate(file.publishedAt)} · Added {formatDisplayDate(file.addedAt)}
           </p>
+          {file.storagePath ? (
+            <div className="mt-5">
+              <Link href={`/api/files/${file.id}/download`} className="text-sm font-medium text-foreground underline underline-offset-4">
+                Open or download original file
+              </Link>
+            </div>
+          ) : null}
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -83,6 +92,15 @@ export default async function SourceDetailPage({
                 <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Analyst Interpretation</p>
                 <p className="mt-3 max-w-reading text-sm leading-8 text-muted-foreground">{file.analystInterpretation}</p>
               </div>
+
+              {activeFramework ? (
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Framework Context</p>
+                  <p className="mt-3 max-w-reading text-sm leading-8 text-muted-foreground">
+                    Active framework: {activeFramework.name}. This file should be evaluated against the active question set and red flags before its conclusions are treated as final.
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -102,14 +120,14 @@ export default async function SourceDetailPage({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">Linked Research</CardTitle>
+                <CardTitle className="text-2xl">Linked Assets</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {linkedResearch.length ? (
-                  linkedResearch.map((item) => (
+                {linkedAssets.length ? (
+                  linkedAssets.map((item) => (
                     <Link
                       key={item.id}
-                      href={`/research/${item.type === "sector" ? "sectors" : "assets"}/${item.slug}`}
+                      href={`/research/assets/${item.slug}`}
                       className="block rounded-[1.2rem] border border-border/70 bg-card/80 px-4 py-4 transition-colors hover:bg-accent/60"
                     >
                       <p className="font-medium text-foreground">{item.title}</p>
@@ -118,17 +136,13 @@ export default async function SourceDetailPage({
                   ))
                 ) : (
                   <div className="rounded-[1.2rem] bg-accent/60 px-4 py-4 text-sm leading-7 text-muted-foreground">
-                    Not linked yet. This file can be connected to a research thread later.
+                    Not linked yet. This file can be connected to an asset thread later.
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <FileLinkManager
-              fileId={file.id}
-              linkedResearchLabels={linkedResearch.map((item) => item.title)}
-              researchItems={allResearchItems}
-            />
+            <FileLinkManager fileId={file.id} linkedAssetLabels={linkedAssets.map((item) => item.title)} assets={allAssets} />
 
             <InsightWorkflowCard fileId={file.id} />
           </div>
